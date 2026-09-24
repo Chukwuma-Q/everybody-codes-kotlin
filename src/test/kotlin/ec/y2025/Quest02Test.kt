@@ -15,4 +15,20 @@ class Quest02Test {
         """.trimIndent()
         assertEquals(Answer("[357,862]"), quest.part1(sample))
     }
+
+    @Test
+    fun `part 2 sample`() {
+        val sample = """
+        A=[35300,-64910]
+    """.trimIndent()
+        assertEquals(Answer(4076), quest.part2(sample))
+    }
+
+    @Test
+    fun `part 3 sample`() {
+        val sample = """
+        A=[35300,-64910]
+    """.trimIndent()
+        assertEquals(Answer(406954), quest.part3(sample))
+    }
 }

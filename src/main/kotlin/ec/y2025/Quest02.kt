@@ -14,8 +14,29 @@ class Quest02 : Quest {
         return Answer(result.toString())
     }
 
-    override fun part2(input: String): Answer = TODO("quest 02 part 2")
-    override fun part3(input: String): Answer = TODO("quest 02 part 3")
+    /** Count the engraved points of a 101 × 101 grid spanning A to A + [1000,1000]. */
+    override fun part2(input: String): Answer =
+        Answer(engravedPoints(Complex.parse(input), perSide = 101))
+
+    /** The same engraving at ten times the resolution: 1001 × 1001 points. */
+    override fun part3(input: String): Answer =
+        Answer(engravedPoints(Complex.parse(input), perSide = 1001))
+
+    /** Grid points, [perSide] to a side, from [corner] to [corner] + [1000,1000], that get engraved. */
+    private fun engravedPoints(corner: Complex, perSide: Int): Int {
+        require(1000 % (perSide - 1) == 0) { "a $perSide-point side can't space evenly across 1000" }
+        val step = 1000L / (perSide - 1)
+        return (0 until perSide).sumOf { row ->
+            (0 until perSide).count { col -> engraved(corner + Complex(col * step, row * step)) }
+        }
+    }
+
+    /** Engraved if 100 cycles of R = R * R / [DIVISOR] + P never leave [LIMIT]. */
+    private fun engraved(point: Complex): Boolean =
+        generateSequence(Complex.ZERO) { r -> r * r / DIVISOR + point }
+            .drop(1)
+            .take(100)
+            .all { it.x in LIMIT && it.y in LIMIT }
 
     /**
      * The puzzle's "complex" number. Division is not true complex division: each
@@ -48,5 +69,11 @@ class Quest02 : Quest {
                 return Complex(parts[0], parts[1])
             }
         }
+    }
+
+    /** The engraving rule's two constants, kept side by side. */
+    private companion object {
+        val DIVISOR = Complex(100_000, 100_000)
+        val LIMIT = -1_000_000L..1_000_000L
     }
 }

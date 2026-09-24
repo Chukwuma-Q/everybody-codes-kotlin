@@ -9,6 +9,7 @@ Verified endpoints on api.everybody.codes, authenticated with cookie everybody-c
   POST /event/<year>/quest/<quest>/part/<p>/answer body {"answer": "..."} -> {"correct": bool, ...}
 
 Saved answers come from answers/<year>/quest<NN>.txt, which `make run` writes.
+Requests identify themselves with EC_USER_AGENT from .env, or a generic default.
 """
 import json
 import os
@@ -19,7 +20,7 @@ import urllib.request
 from pathlib import Path
 
 API = "https://api.everybody.codes"
-USER_AGENT = "everybody-codes-kotlin (github.com/aguluman)"
+DEFAULT_USER_AGENT = "everybody-codes-kotlin"
 USAGE = "usage: ec.py submit <year> <quest> <part>  |  ec.py check <year> <quest>"
 
 
@@ -37,7 +38,7 @@ def load_env() -> dict:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 key, value = line.split("=", 1)
-                env[key.strip()] = value.strip()
+                env[key.strip()] = value.strip().strip("\"'")
     env.update({k: v for k, v in os.environ.items() if k.startswith("EC_")})
     return env
 
@@ -47,7 +48,7 @@ def call(env: dict, method: str, path: str, body: dict | None = None) -> dict:
     data = json.dumps(body).encode() if body is not None else None
     headers = {
         "Cookie": f"{env.get('EC_COOKIE', 'everybody-codes')}={token}",
-        "User-Agent": USER_AGENT,
+        "User-Agent": env.get("EC_USER_AGENT", DEFAULT_USER_AGENT),
         "Accept": "application/json",
     }
     if data is not None:

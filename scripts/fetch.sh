@@ -63,7 +63,7 @@ PY
 }
 
 # ---------------------------------------------------------------- input ----
-curl -fsS "https://everybody.codes/assets/$YEAR/$QNUM/input/$EC_SEED.json" -o "$tmp/blob.json"
+curl -fsS -A "${EC_USER_AGENT:-everybody-codes-kotlin}" "https://everybody.codes/assets/$YEAR/$QNUM/input/$EC_SEED.json" -o "$tmp/blob.json"
 CIPHER=$(field "$tmp/blob.json" "$PART" "input blob")
 [ -n "$CIPHER" ] || { echo "No ciphertext for part $PART in the input blob."; exit 1; }
 
@@ -84,7 +84,7 @@ else
   if [ -n "$left" ] && [ "$left" -lt 86400 ]; then
     echo "note  EC_TOKEN expires in $((left / 3600))h — refresh it soon"
   fi
-  curl -fsS --cookie "${EC_COOKIE:-everybody-codes}=$EC_TOKEN" \
+  curl -fsS -A "${EC_USER_AGENT:-everybody-codes-kotlin}" --cookie "${EC_COOKIE:-everybody-codes}=$EC_TOKEN" \
        "https://api.everybody.codes/event/$YEAR/quest/$QNUM" -o "$tmp/keys.json"
   KEY=$(field "$tmp/keys.json" "key$PART" \
         "keys API (check EC_TOKEN in .env, or run: make key Q=$QUEST P=$PART)")

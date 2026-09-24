@@ -21,6 +21,8 @@ help:
 > @echo "  make fetch Q=01            download all three inputs (see scripts/fetch.sh)"
 > @echo "  make fetch Q=01 P=2        download one part"
 > @echo "  make key Q=01 P=1          save a key by hand (fallback if the API fails)"
+> @echo "  make submit Q=01 P=1       submit the saved answer (asks first)"
+> @echo "  make check Q=01            compare saved answers with the accepted ones"
 > @echo "  make run Q=01              run every part that has input"
 > @echo "  make run Q=01 P=2          run one part"
 > @echo "  make test Q=01             run that quest's sample tests"
@@ -109,3 +111,11 @@ key: guard-Q
 >   printf '%s' "$$k" > keys/$(YEAR)/quest$(QQ)_part$(P).key; \
 >   chmod 600 keys/$(YEAR)/quest$(QQ)_part$(P).key; \
 >   echo "saved — now run: make fetch Q=$(Q) P=$(P)"
+
+.PHONY: submit check
+submit: guard-Q
+> @test -n "$(P)" || { echo "Specify a part: make submit Q=$(Q) P=1"; exit 1; }
+> @python3 scripts/ec.py submit "$(YEAR)" "$(QQ)" "$(P)"
+
+check: guard-Q
+> @python3 scripts/ec.py check "$(YEAR)" "$(QQ)"

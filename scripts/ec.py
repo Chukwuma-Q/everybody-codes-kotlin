@@ -20,13 +20,14 @@ import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
+from typing import NoReturn
 
 API = "https://api.everybody.codes"
 DEFAULT_USER_AGENT = "everybody-codes-kotlin"
 USAGE = "usage: ec.py submit|key <year> <quest> <part>  |  ec.py check <year> <quest>"
 
 
-def die(message: str, code: int = 1):
+def die(message: str, code: int = 1) -> NoReturn:
     print(message, file=sys.stderr)
     sys.exit(code)
 

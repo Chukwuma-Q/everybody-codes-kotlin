@@ -3,6 +3,7 @@
 
   scripts/ec.py submit <year> <quest> <part>   post the saved answer, after checks and a y/N
   scripts/ec.py check  <year> <quest>          compare saved answers with the accepted ones
+  scripts/ec.py key    <year> <quest> <part>   save a key by hand (fallback if the API fails)
 
 Verified endpoints on api.everybody.codes, authenticated with cookie everybody-codes=<EC_TOKEN>:
   GET  /event/<year>/quest/<quest>                 keyN, answerN once solved, penaltyLeftMs
@@ -11,6 +12,7 @@ Verified endpoints on api.everybody.codes, authenticated with cookie everybody-c
 Saved answers come from answers/<year>/quest<NN>.txt, which `make run` writes.
 Requests identify themselves with EC_USER_AGENT from .env, or a generic default.
 """
+import getpass
 import json
 import os
 import subprocess
@@ -21,7 +23,7 @@ from pathlib import Path
 
 API = "https://api.everybody.codes"
 DEFAULT_USER_AGENT = "everybody-codes-kotlin"
-USAGE = "usage: ec.py submit <year> <quest> <part>  |  ec.py check <year> <quest>"
+USAGE = "usage: ec.py submit|key <year> <quest> <part>  |  ec.py check <year> <quest>"
 
 
 def die(message: str, code: int = 1):
@@ -140,6 +142,20 @@ def check(env: dict, year: int, quest: int) -> int:
     return 0 if consistent else 1
 
 
+def save_key(year: int, quest: int, part: int) -> int:
+    """Prompt for a key without echoing it, and store it readable by you alone."""
+    key = getpass.getpass(f"paste key{part} for quest {quest:02d} (hidden): ")
+    if len(key) != 32:
+        die(f"expected 32 characters, got {len(key)}")
+    path = Path(f"keys/{year}/quest{quest:02d}_part{part}.key")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(key)
+    print(f"saved - now run: make fetch Q={quest:02d} P={part}")
+    return 0
+
+
 def main(argv: list) -> int:
     if len(argv) < 3:
         die(USAGE, 2)
@@ -151,6 +167,8 @@ def main(argv: list) -> int:
     env = load_env()
     if command == "submit" and len(numbers) == 3 and numbers[2] in (1, 2, 3):
         return submit(env, *numbers)
+    if command == "key" and len(numbers) == 3 and numbers[2] in (1, 2, 3):
+        return save_key(*numbers)
     if command == "check" and len(numbers) == 2:
         return check(env, *numbers)
     die(USAGE, 2)

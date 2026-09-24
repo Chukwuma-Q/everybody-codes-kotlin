@@ -5,8 +5,8 @@ YEAR ?= 2025
 Q    ?=
 P    ?=
 
-QN = $(shell { echo $$((10#$(Q))); } 2>/dev/null)
-QQ = $(shell { printf '%02d' $$((10#$(Q))); } 2>/dev/null)
+QN = $(shell echo '$(Q)' | sed 's/^0*\([0-9]\)/\1/')
+QQ = $(shell printf '%02d' '$(QN)' 2>/dev/null)
 
 SRC      = src/main/kotlin/ec/y$(YEAR)
 TEST     = src/test/kotlin/ec/y$(YEAR)
@@ -104,12 +104,7 @@ clean:
 .PHONY: key
 key: guard-Q
 	@test -n "$(P)" || { echo "Specify a part: make key Q=$(Q) P=1"; exit 1; }
-	@mkdir -p keys/$(YEAR)
-	@read -rsp "paste key$(P) for quest $(QQ) (hidden): " k; echo; \
-	  test $${#k} -eq 32 || { echo "expected 32 characters, got $${#k}"; exit 1; }; \
-	  printf '%s' "$$k" > keys/$(YEAR)/quest$(QQ)_part$(P).key; \
-	  chmod 600 keys/$(YEAR)/quest$(QQ)_part$(P).key; \
-	  echo "saved — now run: make fetch Q=$(Q) P=$(P)"
+	@python3 scripts/ec.py key "$(YEAR)" "$(QQ)" "$(P)"
 
 .PHONY: submit check
 submit: guard-Q

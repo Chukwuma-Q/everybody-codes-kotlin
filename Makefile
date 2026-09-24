@@ -40,9 +40,9 @@ guard-Q:
 new: guard-Q
 	@test ! -f "$(SRC)/Quest$(QQ).kt" || { echo "$(SRC)/Quest$(QQ).kt exists"; exit 1; }
 	@mkdir -p "$(SRC)" "$(TEST)" "inputs/$(YEAR)"
-	@sed -e 's/YEAR/$(YEAR)/g' -e 's/NN/$(QQ)/g' templates/Quest.kt.tmpl     > "$(SRC)/Quest$(QQ).kt"
-	@sed -e 's/YEAR/$(YEAR)/g' -e 's/NN/$(QQ)/g' templates/QuestTest.kt.tmpl > "$(TEST)/Quest$(QQ)Test.kt"
-	@test -f "$(SRC)/Quests.kt" || sed 's/YEAR/$(YEAR)/g' templates/Quests.kt.tmpl > "$(SRC)/Quests.kt"
+	@sed -e 's/{{YEAR}}/$(YEAR)/g' -e 's/{{NN}}/$(QQ)/g' templates/Quest.kt.tmpl     > "$(SRC)/Quest$(QQ).kt"
+	@sed -e 's/{{YEAR}}/$(YEAR)/g' -e 's/{{NN}}/$(QQ)/g' templates/QuestTest.kt.tmpl > "$(TEST)/Quest$(QQ)Test.kt"
+	@test -f "$(SRC)/Quests.kt" || sed 's/{{YEAR}}/$(YEAR)/g' templates/Quests.kt.tmpl > "$(SRC)/Quests.kt"
 	@grep -q '$(YEAR) to ec.y$(YEAR).quests' $(REGISTRY) || \
 	  sed -i 's|^    // make new: years|    $(YEAR) to ec.y$(YEAR).quests,\n&|' $(REGISTRY)
 	@sed -i 's|^    // make new: quests|    $(QN) to ::Quest$(QQ),\n&|' "$(SRC)/Quests.kt"

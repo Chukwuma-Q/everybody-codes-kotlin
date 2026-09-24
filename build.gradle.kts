@@ -26,8 +26,3 @@ tasks.test {
     useJUnitPlatform()
     testLogging { showStandardStreams = true }
 }
-
-tasks.named<JavaExec>("run") {
-    // Solutions read their input from a file, but keep stdin usable anyway.
-    standardInput = System.`in`
-}

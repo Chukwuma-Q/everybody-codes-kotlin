@@ -11,10 +11,6 @@ dependencies {
 
 kotlin {
     jvmToolchain(21)
-    compilerOptions {
-        // Experimental stdlib bits from 2.4.20: allDistinct(), allEqual(), etc.
-        freeCompilerArgs.add("-opt-in=kotlin.ExperimentalStdlibApi")
-    }
 }
 
 application {

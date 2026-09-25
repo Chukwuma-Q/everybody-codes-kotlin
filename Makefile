@@ -100,6 +100,7 @@ bench: guard-Q guard-P $(EC)
 	@command -v hyperfine >/dev/null || { echo "hyperfine not installed"; exit 1; }
 	@mkdir -p benchmark/$(YEAR)
 	@hyperfine --warmup 3 --runs 10 \
+	  -n "quest $(QQ) part $(P)" \
 	  --export-markdown "benchmark/$(YEAR)/quest$(QQ)_part$(P).md" \
 	  "$(EC) run $(YEAR) $(QQ) $(P)"
 

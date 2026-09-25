@@ -41,7 +41,9 @@ class Quest01 : Quest {
         companion object {
             fun parse(token: String): Move {
                 val sign = when (token.firstOrNull()) {
-                    'L' -> -1; 'R' -> 1; else -> null
+                    'L' -> -1
+                    'R' -> 1
+                    else -> null
                 }
                 val steps = token.drop(1).toIntOrNull()
                 require(sign != null && steps != null && steps >= 0) { "bad instruction: '$token'" }

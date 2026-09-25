@@ -2,7 +2,6 @@ package ec.cli
 
 import com.sun.net.httpserver.HttpServer
 import ec.Part
-import java.io.File
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermissions
@@ -77,7 +76,14 @@ class SiteTest {
     fun `a locked part says which part to solve first`() {
         routes["GET /assets/2025/1/input/79.json"] = """{"1": "$CIPHER_1", "2": "$CIPHER_2"}"""
         routes["GET /event/2025/quest/1"] = """{"penaltyLeftMs": 0, "key1": "$KEY_1"}"""
-        val failure = assertFailsWith<Failure> { fetchInputs(Command.Fetch(quest, listOf(Part.Two)), workspace, api, force = false) }
+        val failure = assertFailsWith<Failure> {
+            fetchInputs(
+                Command.Fetch(quest, listOf(Part.Two)),
+                workspace,
+                api,
+                force = false
+            )
+        }
         assertTrue("part 1" in failure.message.orEmpty())
     }
 
@@ -109,7 +115,8 @@ class SiteTest {
     @Test
     fun `submit posts the saved answer as JSON, then fetches the next part`() {
         routes["GET /event/2025/quest/1"] = """{"penaltyLeftMs": 0, "key1": "$KEY_1", "key2": "$KEY_2"}"""
-        routes["POST /event/2025/quest/1/part/1/answer"] = """{"correct": true, "globalPlace": 1505, "localTime": 1542335}"""
+        routes["POST /event/2025/quest/1/part/1/answer"] =
+            """{"correct": true, "globalPlace": 1505, "localTime": 1542335}"""
         routes["GET /assets/2025/1/input/79.json"] = """{"1": "$CIPHER_1", "2": "$CIPHER_2"}"""
         Answers.record(workspace.answers(quest), mapOf(Part.One to "Fyr\"ryn"))
 
@@ -132,8 +139,20 @@ class SiteTest {
     fun `submit refuses during a lockout and for a locked part`() {
         Answers.record(workspace.answers(quest), mapOf(Part.Two to "x", Part.Three to "y"))
         routes["GET /event/2025/quest/1"] = """{"key1": "$KEY_1", "key2": "$KEY_2", "penaltyLeftMs": 60000}"""
-        assertTrue("wait 1m" in assertFailsWith<Failure> { submitAnswer(Command.Submit(quest, Part.Two), workspace, api) { true } }.message.orEmpty())
-        assertTrue("locked" in assertFailsWith<Failure> { submitAnswer(Command.Submit(quest, Part.Three), workspace, api) { true } }.message.orEmpty())
+        assertTrue("wait 1m" in assertFailsWith<Failure> {
+            submitAnswer(
+                Command.Submit(quest, Part.Two),
+                workspace,
+                api
+            ) { true }
+        }.message.orEmpty())
+        assertTrue("locked" in assertFailsWith<Failure> {
+            submitAnswer(
+                Command.Submit(quest, Part.Three),
+                workspace,
+                api
+            ) { true }
+        }.message.orEmpty())
     }
 
     @Test
@@ -146,7 +165,8 @@ class SiteTest {
     private companion object {
         const val KEY_1 = "abcdefghijklmnopqrstuvwxyz012345"
         const val KEY_2 = "ZYXWVUTSRQPONMLKJIHGFEDCBA987654"
-        const val CIPHER_1 = "1ab77db8be44df9652ea27e8fae4ff1d2247a2a75cebaef4d510130701246ea09bf07fc697ab17576752114776ad59e1"
+        const val CIPHER_1 =
+            "1ab77db8be44df9652ea27e8fae4ff1d2247a2a75cebaef4d510130701246ea09bf07fc697ab17576752114776ad59e1"
         const val CIPHER_2 = "a0d4d267b9e2db34061d4c19f1339703"
         const val PLAIN_1 = "Vyrdax,Drakzyph,Fyrryn,Elarzris\n\nR3,L2,R3,L1"
         const val PLAIN_2 = "A=[25,9]"

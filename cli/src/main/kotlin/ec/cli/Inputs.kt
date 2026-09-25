@@ -5,6 +5,7 @@ import java.security.GeneralSecurityException
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
+import java.util.HexFormat
 
 /**
  * Downloads and decrypts each requested part's input, skipping files already present unless [force].
@@ -49,12 +50,14 @@ internal fun fetchInputs(
     return true
 }
 
-/** AES-256-CBC as the site uses it: the 32-character key as-is, and its first 16 characters as the IV. */
+/** AES-256-CBC as the site uses it: the 32-byte key as-is, and its first 16 bytes as the IV. */
 internal fun decrypt(hexCipherText: String, key: String): String {
     val keyBytes = key.toByteArray(Charsets.UTF_8)
-    if (keyBytes.size != 32) fail("Key is ${keyBytes.size} bytes; expected 32.")
+    if (keyBytes.size != KEY_BYTES) {
+        fail("Key is ${keyBytes.size} bytes (${key.length} characters); expected $KEY_BYTES bytes.")
+    }
     val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
-    cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keyBytes, "AES"), IvParameterSpec(keyBytes.copyOf(16)))
+    cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(keyBytes, "AES"), IvParameterSpec(keyBytes.copyOf(IV_BYTES)))
     val plain = try {
         cipher.doFinal(hexToBytes(hexCipherText))
     } catch (e: GeneralSecurityException) {
@@ -63,14 +66,16 @@ internal fun decrypt(hexCipherText: String, key: String): String {
     return String(plain, Charsets.UTF_8)
 }
 
-private fun hexToBytes(hex: String): ByteArray {
-    val clean = hex.trim()
-    if (clean.length % 2 != 0 || clean.any { it !in '0'..'9' && it.lowercaseChar() !in 'a'..'f' }) {
-        fail("The ciphertext isn't a hex string.")
+private fun hexToBytes(hex: String): ByteArray =
+    try {
+        HexFormat.of().parseHex(hex.trim())
+    } catch (e: IllegalArgumentException) {
+        fail("The ciphertext isn't a hex string: ${e.message}")
     }
-    return ByteArray(clean.length / 2) { clean.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
-}
 
 /** Lines as a person counts them: a final newline doesn't start another line. */
 private fun lineCount(text: String): Int =
     if (text.isEmpty()) 0 else text.count { it == '\n' } + if (text.endsWith('\n')) 0 else 1
+
+private const val KEY_BYTES = 32
+private const val IV_BYTES = 16

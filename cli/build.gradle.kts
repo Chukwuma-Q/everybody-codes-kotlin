@@ -26,5 +26,4 @@ tasks.named<JavaExec>("run") {
 
 tasks.test {
     useJUnitPlatform()
-    testLogging { showStandardStreams = true }
 }

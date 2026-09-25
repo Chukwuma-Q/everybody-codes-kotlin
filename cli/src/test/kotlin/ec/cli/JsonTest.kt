@@ -9,7 +9,8 @@ class JsonTest {
 
     @Test
     fun `reads the shape of the keys response`() {
-        val obj = Json.parseObject("""{"penaltyUntil": null, "penaltyLeftMs": 0, "key1": "K!Bu]\"x\\y", "answer1": "Thymoryn"}""")
+        val obj =
+            Json.parseObject("""{"penaltyUntil": null, "penaltyLeftMs": 0, "key1": "K!Bu]\"x\\y", "answer1": "Thymoryn"}""")
         assertEquals("K!Bu]\"x\\y", obj.text("key1"))
         assertEquals(0L, obj.long("penaltyLeftMs"))
         assertNull(obj.text("penaltyUntil"))

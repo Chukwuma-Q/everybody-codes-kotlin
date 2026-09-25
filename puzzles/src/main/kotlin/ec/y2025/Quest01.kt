@@ -34,15 +34,15 @@ class Quest01 : Quest {
 
     private fun <T> List<T>.swap(i: Int, j: Int): List<T> =
         toMutableList().also { it[i] = this[j]; it[j] = this[i] }
-    
+
     /** A signed step along the list: L3 is -3, R3 is +3. */
     @JvmInline
     private value class Move(val delta: Int) {
         companion object {
             fun parse(token: String): Move {
                 val sign = when (token.firstOrNull()) {
-                    'L' -> -1
-                    'R' -> 1
+                    'L'  -> -1
+                    'R'  -> 1
                     else -> null
                 }
                 val steps = token.drop(1).toIntOrNull()

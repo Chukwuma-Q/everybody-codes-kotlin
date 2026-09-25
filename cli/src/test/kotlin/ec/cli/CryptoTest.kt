@@ -9,7 +9,8 @@ class CryptoTest {
 
     @Test
     fun `decrypts what openssl encrypted`() {
-        val cipherText = "1ab77db8be44df9652ea27e8fae4ff1d2247a2a75cebaef4d510130701246ea09bf07fc697ab17576752114776ad59e1"
+        val cipherText =
+            "1ab77db8be44df9652ea27e8fae4ff1d2247a2a75cebaef4d510130701246ea09bf07fc697ab17576752114776ad59e1"
         assertEquals("Vyrdax,Drakzyph,Fyrryn,Elarzris\n\nR3,L2,R3,L1", decrypt(cipherText, KEY))
     }
 

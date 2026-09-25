@@ -4,7 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-/** Vectors made with `openssl enc -aes-256-cbc`, the tool the old fetch.sh used, key as-is, IV = its first 16 characters. */
+/** Vectors made with `openssl enc -aes-256-cbc`, the tool the old fetch.sh used, key as-is, IV = its first 16 bytes. */
 class CryptoTest {
 
     @Test
@@ -25,8 +25,13 @@ class CryptoTest {
     }
 
     @Test
-    fun `ciphertext that isn't hex is refused`() {
-        assertFailsWith<Failure> { decrypt("xyz", KEY) }
+    fun `ciphertext with a non-hex character is refused`() {
+        assertFailsWith<Failure> { decrypt("a0d4d267b9e2db34061d4c19f13397zz", KEY) }
+    }
+
+    @Test
+    fun `ciphertext with an odd number of digits is refused`() {
+        assertFailsWith<Failure> { decrypt("a0d4d267b9e2db34061d4c19f133970", KEY) }
     }
 
     private companion object {

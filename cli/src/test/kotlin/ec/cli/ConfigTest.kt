@@ -3,7 +3,7 @@ package ec.cli
 import java.time.Instant
 import java.util.Base64
 import kotlin.io.path.createTempDirectory
-import kotlin.io.path.writeText
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -11,6 +11,13 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class ConfigTest {
+
+    private val dir = createTempDirectory().toFile()
+
+    @AfterTest
+    fun cleanUp() {
+        dir.deleteRecursively()
+    }
 
     @Test
     fun `values lose exactly one pair of surrounding quotes`() {
@@ -23,8 +30,8 @@ class ConfigTest {
 
     @Test
     fun `environment variables override the file`() {
-        val file = createTempDirectory().resolve(".env").also { it.writeText("EC_SEED=79\nEC_TOKEN=from-file\n") }
-        val config = Config.load(file.toFile(), mapOf("EC_TOKEN" to "from-env", "HOME" to "/ignored"))
+        val file = dir.resolve(".env").also { it.writeText("EC_SEED=79\nEC_TOKEN=from-file\n") }
+        val config = Config.load(file, mapOf("EC_TOKEN" to "from-env", "HOME" to "/ignored"))
         assertEquals("79", config.seed)
         assertEquals("from-env", config.token)
         assertEquals("everybody-codes", config.cookie)

@@ -49,7 +49,10 @@ class SiteTest {
     private val quest = QuestId.of("2025", "01")!!
 
     @AfterTest
-    fun stop() = server.stop(0)
+    fun stop() {
+        server.stop(0)
+        root.deleteRecursively()
+    }
 
     @Test
     fun `fetch downloads, decrypts and writes the input, without sending the cookie to the assets host`() {

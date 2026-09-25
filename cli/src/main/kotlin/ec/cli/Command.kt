@@ -46,12 +46,12 @@ sealed interface Command {
             val quest = QuestId.of(args.getOrNull(1), args.getOrNull(2)) ?: return null
             val parts = args.drop(3).map { Part.of(it) ?: return null }.distinct().sorted()
             return when (args.first()) {
-                "run" -> Run(quest, parts.ifEmpty { Part.entries.toList() })
-                "fetch" -> Fetch(quest, parts.ifEmpty { Part.entries.toList() })
+                "run"    -> Run(quest, parts.ifEmpty { Part.entries.toList() })
+                "fetch"  -> Fetch(quest, parts.ifEmpty { Part.entries.toList() })
                 "submit" -> parts.singleOrNull()?.let { Submit(quest, it) }
-                "key" -> parts.singleOrNull()?.let { Key(quest, it) }
-                "check" -> if (parts.isEmpty()) Check(quest) else null
-                else -> null
+                "key"    -> parts.singleOrNull()?.let { Key(quest, it) }
+                "check"  -> if (parts.isEmpty()) Check(quest) else null
+                else     -> null
             }
         }
     }

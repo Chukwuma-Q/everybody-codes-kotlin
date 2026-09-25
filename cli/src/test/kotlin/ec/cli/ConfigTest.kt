@@ -14,9 +14,9 @@ class ConfigTest {
 
     @Test
     fun `values lose exactly one pair of surrounding quotes`() {
-        assertEquals("EC_USER_AGENT" to "tool (+https://x)", Config.entry("""EC_USER_AGENT="tool (+https://x)""""))
-        assertEquals("EC_SEED" to "79", Config.entry("EC_SEED=79"))
-        assertEquals("A" to "'it's'", Config.entry("A=''it's''"))
+        assertEquals(Config.entry("""EC_USER_AGENT="tool (+https://x)""""), "EC_USER_AGENT" to "tool (+https://x)")
+        assertEquals(Config.entry("EC_SEED=79"), "EC_SEED" to "79")
+        assertEquals(Config.entry("A=''it's''"), "A" to "'it's'")
         assertNull(Config.entry("# a comment"))
         assertNull(Config.entry("   "))
     }

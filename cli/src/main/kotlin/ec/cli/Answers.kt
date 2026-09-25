@@ -16,7 +16,11 @@ internal object Answers {
     fun record(file: File, fresh: Map<Part, String>) {
         val merged = (read(file) + fresh).toSortedMap()
         file.parentFile?.mkdirs()
-        file.writeText(merged.entries.joinToString("\n", postfix = "\n") { (part, answer) -> "Part${part.number}: $answer" })
+        file.writeText(
+            merged.entries.joinToString(
+                "\n",
+                postfix = "\n"
+            ) { (part, answer) -> "Part${part.number}: $answer" })
     }
 
     private fun entry(line: String): Pair<Part, String>? {

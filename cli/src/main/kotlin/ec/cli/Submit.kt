@@ -58,7 +58,7 @@ internal fun checkAnswers(command: Command.Check, workspace: Workspace, api: Api
             site == null -> "not solved on the site yet"
             mine == null -> "accepted '$site', nothing saved locally"
             mine == site -> "ok  '$mine'"
-            else -> {
+            else         -> {
                 consistent = false
                 "MISMATCH  saved '$mine', accepted '$site'"
             }
@@ -69,7 +69,11 @@ internal fun checkAnswers(command: Command.Check, workspace: Workspace, api: Api
 }
 
 /** Saves a key copied from the browser, readable by you alone. The fallback if the API fails. */
-internal fun saveKey(command: Command.Key, workspace: Workspace, readSecret: (String) -> String? = ::readHidden): Boolean {
+internal fun saveKey(
+    command: Command.Key,
+    workspace: Workspace,
+    readSecret: (String) -> String? = ::readHidden
+): Boolean {
     val key = readSecret("paste key${command.part.number} for quest ${command.quest.padded} (hidden): ")
         ?: fail("No key entered.")
     if (key.length != 32) fail("expected 32 characters, got ${key.length}")

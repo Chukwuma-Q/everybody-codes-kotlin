@@ -33,8 +33,8 @@ private fun solve(quest: Quest, part: Part, input: File): Answer? {
     val (outcome, took) = measureTimedValue {
         runCatching {
             when (part) {
-                Part.One -> quest.part1(text)
-                Part.Two -> quest.part2(text)
+                Part.One   -> quest.part1(text)
+                Part.Two   -> quest.part2(text)
                 Part.Three -> quest.part3(text)
             }
         }

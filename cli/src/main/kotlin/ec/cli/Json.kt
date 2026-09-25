@@ -6,6 +6,7 @@ package ec.cli
  */
 internal sealed interface Json {
     data class Str(val value: String) : Json
+
     /** Kept exactly as written, so nothing is lost until a caller asks for a type. */
     data class Num(val text: String) : Json
     data class Bool(val value: Boolean) : Json
@@ -16,8 +17,9 @@ internal sealed interface Json {
         fun text(name: String): String? = when (val v = fields[name]) {
             is Str -> v.value
             is Num -> v.text
-            else -> null
+            else   -> null
         }
+
         fun long(name: String): Long? = (fields[name] as? Num)?.text?.toBigDecimalOrNull()?.toLong()
         fun bool(name: String): Boolean? = (fields[name] as? Bool)?.value
     }
@@ -32,7 +34,7 @@ internal sealed interface Json {
         fun quote(value: String): String = buildString {
             append('"')
             for (c in value) when (c) {
-                '"' -> append("\\\"")
+                '"'  -> append("\\\"")
                 '\\' -> append("\\\\")
                 '\n' -> append("\\n")
                 '\r' -> append("\\r")
@@ -52,12 +54,12 @@ private class Parser(private val s: String) {
     private fun value(): Json {
         whitespace()
         return when (peek()) {
-            '{' -> obj()
-            '[' -> arr()
-            '"' -> Json.Str(string())
-            't' -> literal("true", Json.Bool(true))
-            'f' -> literal("false", Json.Bool(false))
-            'n' -> literal("null", Json.Null)
+            '{'  -> obj()
+            '['  -> arr()
+            '"'  -> Json.Str(string())
+            't'  -> literal("true", Json.Bool(true))
+            'f'  -> literal("false", Json.Bool(false))
+            'n'  -> literal("null", Json.Null)
             else -> num()
         }
     }
@@ -66,7 +68,9 @@ private class Parser(private val s: String) {
         expect('{')
         val fields = LinkedHashMap<String, Json>()
         whitespace()
-        if (peek() == '}') { i++; return Json.Obj(fields) }
+        if (peek() == '}') {
+            i++; return Json.Obj(fields)
+        }
         while (true) {
             whitespace()
             val name = string()
@@ -75,8 +79,8 @@ private class Parser(private val s: String) {
             fields[name] = value()
             whitespace()
             when (next()) {
-                ',' -> continue
-                '}' -> return Json.Obj(fields)
+                ','  -> continue
+                '}'  -> return Json.Obj(fields)
                 else -> error("expected ',' or '}'")
             }
         }
@@ -86,13 +90,15 @@ private class Parser(private val s: String) {
         expect('[')
         val items = mutableListOf<Json>()
         whitespace()
-        if (peek() == ']') { i++; return Json.Arr(items) }
+        if (peek() == ']') {
+            i++; return Json.Arr(items)
+        }
         while (true) {
             items += value()
             whitespace()
             when (next()) {
-                ',' -> continue
-                ']' -> return Json.Arr(items)
+                ','  -> continue
+                ']'  -> return Json.Arr(items)
                 else -> error("expected ',' or ']'")
             }
         }
@@ -104,21 +110,22 @@ private class Parser(private val s: String) {
         while (true) {
             val c = next()
             when {
-                c == '"' -> return out.toString()
+                c == '"'  -> return out.toString()
                 c == '\\' -> out.append(
                     when (val e = next()) {
                         '"', '\\', '/' -> e
-                        'b' -> '\b'
-                        'f' -> '\u000C'
-                        'n' -> '\n'
-                        'r' -> '\r'
-                        't' -> '\t'
-                        'u' -> unicode()
-                        else -> error("unknown escape \\$e")
+                        'b'            -> '\b'
+                        'f'            -> '\u000C'
+                        'n'            -> '\n'
+                        'r'            -> '\r'
+                        't'            -> '\t'
+                        'u'            -> unicode()
+                        else           -> error("unknown escape \\$e")
                     }
                 )
-                c < ' ' -> error("control character inside a string")
-                else -> out.append(c)
+
+                c < ' '   -> error("control character inside a string")
+                else      -> out.append(c)
             }
         }
     }
@@ -134,7 +141,9 @@ private class Parser(private val s: String) {
         val start = i
         if (i < s.length && s[i] == '-') i++
         digits()
-        if (i < s.length && s[i] == '.') { i++; digits() }
+        if (i < s.length && s[i] == '.') {
+            i++; digits()
+        }
         if (i < s.length && (s[i] == 'e' || s[i] == 'E')) {
             i++
             if (i < s.length && (s[i] == '+' || s[i] == '-')) i++
@@ -155,9 +164,16 @@ private class Parser(private val s: String) {
         return value
     }
 
-    private fun whitespace() { while (i < s.length && s[i] in " \t\n\r") i++ }
+    private fun whitespace() {
+        while (i < s.length && s[i] in " \t\n\r") i++
+    }
+
     private fun peek(): Char = if (i < s.length) s[i] else error("unexpected end of input")
     private fun next(): Char = peek().also { i++ }
-    private fun expect(c: Char) { if (next() != c) error("expected '$c'") }
-    private fun error(message: String): Nothing = throw IllegalArgumentException("invalid JSON at character $i: $message")
+    private fun expect(c: Char) {
+        if (next() != c) error("expected '$c'")
+    }
+
+    private fun error(message: String): Nothing =
+        throw IllegalArgumentException("invalid JSON at character $i: $message")
 }

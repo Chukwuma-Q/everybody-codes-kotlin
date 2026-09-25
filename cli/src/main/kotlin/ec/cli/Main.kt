@@ -15,11 +15,11 @@ fun main(args: Array<String>) {
         val workspace = Workspace(File(""))
         val api by lazy { Api(Config.load(workspace.env)) }
         val succeeded = when (command) {
-            is Command.Run -> runQuest(command, workspace)
-            is Command.Fetch -> fetchInputs(command, workspace, api)
+            is Command.Run    -> runQuest(command, workspace)
+            is Command.Fetch  -> fetchInputs(command, workspace, api)
             is Command.Submit -> submitAnswer(command, workspace, api)
-            is Command.Check -> checkAnswers(command, workspace, api)
-            is Command.Key -> saveKey(command, workspace)
+            is Command.Check  -> checkAnswers(command, workspace, api)
+            is Command.Key    -> saveKey(command, workspace)
         }
         if (!succeeded) exitProcess(1)
     } catch (failure: Failure) {

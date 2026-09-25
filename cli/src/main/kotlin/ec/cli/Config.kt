@@ -29,7 +29,10 @@ internal class Config(private val values: Map<String, String>) {
             if (text.isEmpty() || text.startsWith('#') || '=' !in text) return null
             val value = text.substringAfter('=').trim()
             val unquoted =
-                if (value.length >= 2 && value.first() == value.last() && value.first() in "\"'") value.substring(1, value.length - 1)
+                if (value.length >= 2 && value.first() == value.last() && value.first() in "\"'") value.substring(
+                    1,
+                    value.length - 1
+                )
                 else value
             return text.substringBefore('=').trim() to unquoted
         }

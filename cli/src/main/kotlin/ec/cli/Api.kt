@@ -35,7 +35,10 @@ internal class Api(
     private var tokenChecked = false
 
     fun encryptedInputs(quest: QuestId): Map<Part, String> {
-        val blob = send(get("$site/assets/${quest.year}/${quest.number}/input/${config.seed}.json"), authenticated = false).first
+        val blob = send(
+            get("$site/assets/${quest.year}/${quest.number}/input/${config.seed}.json"),
+            authenticated = false
+        ).first
         return Part.entries.mapNotNull { part -> blob.text("${part.number}")?.let { part to it } }.toMap()
     }
 
@@ -49,9 +52,10 @@ internal class Api(
     }
 
     fun submit(quest: QuestId, part: Part, answer: String): Verdict {
-        val request = HttpRequest.newBuilder(URI("$api/event/${quest.year}/quest/${quest.number}/part/${part.number}/answer"))
-            .header("Content-Type", "application/json")
-            .POST(HttpRequest.BodyPublishers.ofString("""{"answer":${Json.quote(answer)}}"""))
+        val request =
+            HttpRequest.newBuilder(URI("$api/event/${quest.year}/quest/${quest.number}/part/${part.number}/answer"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString("""{"answer":${Json.quote(answer)}}"""))
         val (obj, raw) = send(request, authenticated = true)
         return Verdict(obj.bool("correct") == true, obj.long("globalPlace"), obj.long("localTime")?.milliseconds, raw)
     }

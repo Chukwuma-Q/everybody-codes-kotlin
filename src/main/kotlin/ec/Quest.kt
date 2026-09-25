@@ -1,12 +1,6 @@
 package ec
 
-/**
- * One Everybody Codes quest. Each part has its own input file, so each function
- * receives only that part's text — never assume part 2 sees part 1's data.
- *
- * Returning [Answer] rather than Any makes an accidental Unit, or a forgotten
- * return value, a compile error instead of a wrong submission.
- */
+
 interface Quest {
     fun part1(input: String): Answer
     fun part2(input: String): Answer
@@ -15,14 +9,15 @@ interface Quest {
 
 /** The three parts of a quest. There is no fourth, and the type says so. */
 enum class Part(val number: Int) {
-    One(1), Two(2), Three(3);
+    One(1),
+    Two(2),
+    Three(3);
 
     companion object {
         fun of(text: String): Part? = entries.firstOrNull { "${it.number}" == text }
     }
 }
 
-/** What a part produces: a number or a piece of text. Nothing else can be submitted. */
 sealed interface Answer {
     data class Num(val value: Long) : Answer {
         override fun toString() = "$value"
@@ -37,7 +32,6 @@ fun Answer(value: Int): Answer = Answer.Num(value.toLong())
 fun Answer(value: Long): Answer = Answer.Num(value)
 fun Answer(value: String): Answer = Answer.Text(value)
 
-// ------------------------------------------------------------------- parsing --
 
 /**
  * Trimmed, then split into lines. Deliberately not named `lines()`: shadowing the
@@ -51,7 +45,7 @@ fun String.blocks(): List<String> = trim().split(Regex("""\R\s*\R"""))
 /** Every integer in the text, sign-aware. */
 fun String.ints(): List<Int> = NUMBER.findAll(this).map { it.value.toInt() }.toList()
 
-/** Every integer in the text as Long, for values that overflow Int. */
+/** Every sign-aware integer in the text as Long, for values that overflow Int. */
 fun String.longs(): List<Long> = NUMBER.findAll(this).map { it.value.toLong() }.toList()
 
 private val NUMBER = Regex("""-?\d+""")

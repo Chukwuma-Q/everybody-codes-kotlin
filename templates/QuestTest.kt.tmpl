@@ -1,5 +1,7 @@
 package ec.y{{YEAR}}
 
+import ec.Answer
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -12,22 +14,24 @@ class Quest{{NN}}Test {
         val sample = """
             REPLACE ME
         """.trimIndent()
-        assertEquals("?", quest.part1(sample).toString())
+        assertEquals(Answer("REPLACE ME"), quest.part1(sample))
     }
 
+    @Ignore("unlocks after part 1: paste its sample, then delete this line")
     @Test
     fun `part 2 sample`() {
         val sample = """
             REPLACE ME
         """.trimIndent()
-        assertEquals("?", quest.part2(sample).toString())
+        assertEquals(Answer("REPLACE ME"), quest.part2(sample))
     }
 
+    @Ignore("unlocks after part 2: paste its sample, then delete this line")
     @Test
     fun `part 3 sample`() {
         val sample = """
             REPLACE ME
         """.trimIndent()
-        assertEquals("?", quest.part3(sample).toString())
+        assertEquals(Answer("REPLACE ME"), quest.part3(sample))
     }
 }

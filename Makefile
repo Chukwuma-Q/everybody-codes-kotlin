@@ -99,10 +99,10 @@ watch: guard-Q
 bench: guard-Q guard-P $(EC)
 	@command -v hyperfine >/dev/null || { echo "hyperfine not installed"; exit 1; }
 	@mkdir -p benchmark/$(YEAR)
-	@hyperfine --warmup 3 --runs 10 \
-	  -n "quest $(QQ) part $(P)" \
+	@hyperfine --warmup 3 --runs 10 -i \
 	  --export-markdown "benchmark/$(YEAR)/quest$(QQ)_part$(P).md" \
-	  "$(EC) run $(YEAR) $(QQ) $(P)"
+	  -n "quest $(QQ) part $(P)"   "$(EC) run $(YEAR) $(QQ) $(P)" \
+	  -n "start-up only"           "$(EC) run $(YEAR) 99 1"
 
 answers:
 	@for f in answers/$(YEAR)/*.txt; do \

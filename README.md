@@ -60,6 +60,3 @@ src/test/kotlin/ec/y2025/QuestNNTest.kt
 scripts/fetch.sh
 templates/      what `make new` copies from
 ```
-
-The Makefile sets `.RECIPEPREFIX = >`, so recipe lines begin with `>` rather
-than a tab.

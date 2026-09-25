@@ -113,3 +113,7 @@ submit: guard-Q
 
 check: guard-Q
 	@python3 scripts/ec.py check "$(YEAR)" "$(QQ)"
+
+.PHONY: lint
+lint:
+	@mypy --enable-error-code possibly-undefined scripts/ec.py

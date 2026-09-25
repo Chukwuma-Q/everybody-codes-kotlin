@@ -22,6 +22,7 @@ fun main(args: Array<String>) {
     }.toMap()
 
     if (solved.isNotEmpty()) record(File("answers/${call.year}/$name.txt"), solved)
+    if (solved.size < call.parts.size) exitProcess(1)
 }
 
 /** A parsed command line. Only [parse] can build one, so every instance is valid. */
@@ -38,7 +39,7 @@ private class Invocation private constructor(val year: Int, val quest: Int, val 
 
 private fun solve(quest: Quest, part: Part, input: File): Answer? {
     if (!input.isFile || input.length() == 0L) {
-        println("Part ${part.number}: no input — paste it into ${input.path}")
+        println("Part ${part.number}: has no input — paste it into ${input.path}")
         return null
     }
     val text = input.readText()
@@ -54,7 +55,12 @@ private fun solve(quest: Quest, part: Part, input: File): Answer? {
     val time = took.toString(DurationUnit.MILLISECONDS, 3)
     return outcome.fold(
         onSuccess = { println("Part ${part.number}: $it  ($time)"); it },
-        onFailure = { println("Part ${part.number}: FAILED — ${it.message ?: it::class.simpleName}  ($time)"); null },
+        onFailure = { e ->
+            val at = e.stackTrace.firstOrNull { it.className.startsWith("ec.y") }
+                ?.let { " (${it.fileName}:${it.lineNumber})" } ?: ""
+            println("Part ${part.number}: FAILED — ${e.message ?: e::class.simpleName}$at  ($time)")
+            null
+        }
     )
 }
 

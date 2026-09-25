@@ -16,7 +16,6 @@ dependencies {
 application {
     mainClass.set("ec.cli.MainKt")
     applicationName = "ec"
-    applicationDefaultJvmArgs = listOf("-XX:+AutoCreateSharedArchive", "-XX:SharedArchiveFile=cli/build/ec.jsa")
 }
 
 tasks.named<JavaExec>("run") {

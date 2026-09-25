@@ -6,5 +6,6 @@ import ec.Quest
 val quests: Map<Int, () -> Quest> = mapOf(
     1 to ::Quest01,
     2 to ::Quest02,
+    3 to ::Quest03,
     // make new: quests
 )

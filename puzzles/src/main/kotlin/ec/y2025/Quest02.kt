@@ -3,6 +3,7 @@ package ec.y2025
 import ec.Answer
 import ec.Quest
 import ec.longs
+import java.util.stream.IntStream
 
 /** Quest 2: From Complex to Clarity. */
 class Quest02 : Quest {
@@ -22,13 +23,19 @@ class Quest02 : Quest {
     override fun part3(input: String): Answer =
         Answer(engravedPoints(Complex.parse(input), perSide = 1001))
 
-    /** Grid points, [perSide] to a side, from [corner] to [corner] + [1000,1000], that get engraved. */
+    /**
+     * Grid points, [perSide] to a side, from [corner] to [corner] + [1000,1000], that get engraved.
+     *
+     * Rows are independent, so they run as a parallel stream on the JVM's common fork-join pool.
+     * The range is split into chunks, and an idle worker steals chunks from busy ones, so fast
+     * and slow cores both stay busy. Each row returns its own count; nothing is shared.
+     */
     private fun engravedPoints(corner: Complex, perSide: Int): Int {
         require(1000 % (perSide - 1) == 0) { "a $perSide-point side can't space evenly across 1000" }
         val step = 1000L / (perSide - 1)
-        return (0 until perSide).sumOf { row ->
-            (0 until perSide).count { col -> engraved(corner + Complex(col * step, row * step)) }
-        }
+        return IntStream.range(0, perSide).parallel()
+            .map { row -> (0 until perSide).count { col -> engraved(corner + Complex(col * step, row * step)) } }
+            .sum()
     }
 
     /** Engraved if 100 cycles of R = R * R / [DIVISOR] + P never leave [LIMIT]. */

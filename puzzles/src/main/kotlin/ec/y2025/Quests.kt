@@ -8,5 +8,6 @@ val quests: Map<Int, () -> Quest> = mapOf(
     2 to ::Quest02,
     3 to ::Quest03,
     4 to ::Quest04,
+    5 to ::Quest05,
     // make new: quests
 )

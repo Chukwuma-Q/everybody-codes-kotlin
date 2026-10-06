@@ -2,6 +2,7 @@ package ec.y2025
 
 import ec.Answer
 import ec.Quest
+import ec.trimmedLines
 
 /**
  * Quest 4: Teeth of the Wind.
@@ -71,7 +72,7 @@ class Quest04 : Quest {
 
         companion object {
             fun parse(input: String): Train {
-                val lines = input.trim().lines().map(String::trim)
+                val lines = input.trimmedLines().map(String::trim)
                 require(lines.size >= 2) { "a gear train needs at least two gears" }
                 return Train(teeth(lines.first()), lines.subList(1, lines.size - 1).map(::shaft), teeth(lines.last()))
             }

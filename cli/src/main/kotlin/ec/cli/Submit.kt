@@ -73,7 +73,7 @@ internal fun saveKey(
     command: Command.Key,
     workspace: Workspace,
     readSecret: (String) -> String? = ::readHidden
-): Boolean {
+) {
     val key = readSecret("paste key${command.part.number} for quest ${command.quest.padded} (hidden): ")
         ?: fail("No key entered.")
     if (key.length != 32) fail("expected 32 characters, got ${key.length}")
@@ -83,7 +83,6 @@ internal fun saveKey(
     Files.createFile(path, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")))
     Files.writeString(path, key)
     println("saved - now run: make fetch Q=${command.quest.padded} P=${command.part.number}")
-    return true
 }
 
 private fun askYesNo(prompt: String): Boolean {

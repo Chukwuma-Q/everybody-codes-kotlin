@@ -59,7 +59,7 @@ class SiteTest {
         routes["GET /assets/2025/1/input/79.json"] = """{"1": "$CIPHER_1", "2": "$CIPHER_2", "3": "00"}"""
         routes["GET /event/2025/quest/1"] = """{"penaltyLeftMs": 0, "key1": "$KEY_1"}"""
 
-        assertTrue(fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false))
+        fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false)
 
         assertEquals(PLAIN_1, workspace.input(quest, Part.One).readText())
         assertEquals(null, seen.first { it.route.startsWith("GET /assets") }.cookie)
@@ -70,7 +70,7 @@ class SiteTest {
     @Test
     fun `fetch leaves an existing input alone unless forced`() {
         workspace.input(quest, Part.One).apply { parentFile.mkdirs(); writeText("mine") }
-        assertTrue(fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false))
+        fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false)
         assertEquals("mine", workspace.input(quest, Part.One).readText())
         assertTrue(seen.isEmpty(), "nothing should be requested")
     }
@@ -94,7 +94,7 @@ class SiteTest {
     fun `a saved key is used instead of asking the site`() {
         routes["GET /assets/2025/1/input/79.json"] = """{"1": "$CIPHER_1"}"""
         saveKey(Command.Key(quest, Part.One), workspace) { KEY_1 }
-        assertTrue(fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false))
+        fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false)
         assertEquals(PLAIN_1, workspace.input(quest, Part.One).readText())
         assertFalse(seen.any { it.route.startsWith("GET /event") })
     }

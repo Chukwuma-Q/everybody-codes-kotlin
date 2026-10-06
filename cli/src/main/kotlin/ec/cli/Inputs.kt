@@ -16,7 +16,7 @@ internal fun fetchInputs(
     workspace: Workspace,
     api: Api,
     force: Boolean = System.getenv("FORCE") == "1",
-): Boolean {
+) {
     val quest = command.quest
     val wanted = command.parts.filter { part ->
         val file = workspace.input(quest, part)
@@ -24,7 +24,7 @@ internal fun fetchInputs(
         if (!needed) println("${file.path} already present. FORCE=1 to overwrite.")
         needed
     }
-    if (wanted.isEmpty()) return true
+    if (wanted.isEmpty()) return
 
     val encrypted = api.encryptedInputs(quest)
     val state by lazy { api.state(quest) }
@@ -47,10 +47,10 @@ internal fun fetchInputs(
         file.writeText(text)
         println("wrote ${file.path} (${lineCount(text)} lines)")
     }
-    return true
 }
 
 /** AES-256-CBC as the site uses it: the 32-byte key as-is, and its first 16 bytes as the IV. */
+@Suppress("kotlin:S5542") // Mode is fixed by everybody.codes' input format, not our choice; GCM can't decrypt it.
 internal fun decrypt(hexCipherText: String, key: String): String {
     val keyBytes = key.toByteArray(Charsets.UTF_8)
     if (keyBytes.size != KEY_BYTES) {

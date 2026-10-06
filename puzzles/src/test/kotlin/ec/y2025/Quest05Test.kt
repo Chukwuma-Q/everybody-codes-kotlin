@@ -1,7 +1,6 @@
 package ec.y2025
 
 import ec.Answer
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -17,21 +16,42 @@ class Quest05Test {
         assertEquals(Answer(581078), quest.part1(sample))
     }
 
-    @Ignore("unlocks after part 1: paste its sample, then delete this line")
     @Test
     fun `part 2 sample`() {
         val sample = """
-            REPLACE ME
+            1:2,4,1,1,8,2,7,9,8,6
+            2:7,9,9,3,8,3,8,8,6,8
+            3:4,7,6,9,1,8,3,7,2,2
+            4:6,4,2,1,7,4,5,5,5,8
+            5:2,9,3,8,3,9,5,2,1,4
+            6:2,4,9,6,7,4,1,7,6,8
+            7:2,3,7,6,2,2,4,1,4,2
+            8:5,1,5,6,8,3,1,8,3,9
+            9:5,7,7,3,7,2,3,8,6,7
+            10:4,1,9,3,8,5,4,3,5,5
         """.trimIndent()
-        assertEquals(Answer("REPLACE ME"), quest.part2(sample))
+        assertEquals(Answer(77053), quest.part2(sample))
     }
 
-    @Ignore("unlocks after part 2: paste its sample, then delete this line")
     @Test
     fun `part 3 sample`() {
         val sample = """
-            REPLACE ME
+            1:7,1,9,1,6,9,8,3,7,2
+            2:6,1,9,2,9,8,8,4,3,1
+            3:7,1,9,1,6,9,8,3,8,3
+            4:6,1,9,2,8,8,8,4,3,1
+            5:7,1,9,1,6,9,8,3,7,3
+            6:6,1,9,2,8,8,8,4,3,5
+            7:3,7,2,2,7,4,4,6,3,1
+            8:3,7,2,2,7,4,4,6,3,7
+            9:3,7,2,2,7,4,1,6,3,7
         """.trimIndent()
-        assertEquals(Answer("REPLACE ME"), quest.part3(sample))
+        assertEquals(Answer(260), quest.part3(sample))
+
+        val identical = """
+            1:7,1,9,1,6,9,8,3,7,2
+            2:7,1,9,1,6,9,8,3,7,2
+        """.trimIndent()
+        assertEquals(Answer(4), quest.part3(identical))
     }
 }

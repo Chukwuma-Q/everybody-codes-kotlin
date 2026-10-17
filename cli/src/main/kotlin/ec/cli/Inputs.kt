@@ -4,6 +4,7 @@ import ec.Part
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import java.io.File
 import java.security.GeneralSecurityException
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -26,16 +27,11 @@ internal suspend fun fetchInputs(
     prefetched: Deferred<Map<Part, String>>? = null,
 ): Unit = coroutineScope {
     val quest = command.quest
-    val wanted = command.parts.filter { part ->
-        val file = workspace.input(quest, part)
-        val needed = force || !file.hasContent()
-        if (!needed) println("${file.path} already present. FORCE=1 to overwrite.")
-        needed
-    }
+    val wanted = partsToFetch(command, workspace, force)
     if (wanted.isEmpty()) return@coroutineScope
 
     // Start both downloads, then wait. Asking the site for a key is skipped when every
-    // wanted part has a saved one, as before.
+    // wanted part has a saved one.
     val encrypted = prefetched ?: async { api.encryptedInputs(quest) }
     val siteKeysNeeded = wanted.any { !workspace.key(quest, it).hasContent() }
     val state = if (siteKeysNeeded) async { api.state(quest) } else null
@@ -43,24 +39,39 @@ internal suspend fun fetchInputs(
     val cipherTexts = encrypted.await()
     for (part in wanted) {
         val cipherText = cipherTexts[part] ?: fail("No ciphertext for part ${part.number} in the input file.")
-        val saved = workspace.key(quest, part)
-        val key = if (saved.hasContent()) {
-            println("key   ${saved.path}")
-            saved.readText().trim()
-        } else {
-            println("key   API")
-            // Not null: this part has no saved key, so siteKeysNeeded was true.
-            checkNotNull(state).await().keys[part] ?: fail(
-                if (part == Part.One) "No key1 from the site. Is EC_TOKEN current?"
-                else "No key${part.number} yet. Solve and submit part ${part.number - 1} on the site first."
-            )
-        }
-        val text = decrypt(cipherText, key)
-        val file = workspace.input(quest, part)
-        file.parentFile?.mkdirs()
-        file.writeText(text)
-        println("wrote ${file.path} (${lineCount(text)} lines)")
+        writeInput(workspace.input(quest, part), decrypt(cipherText, keyFor(quest, part, workspace, state)))
     }
+}
+
+/** The requested parts whose input is missing, or all of them when [force]d. Says which it skips. */
+private fun partsToFetch(command: Command.Fetch, workspace: Workspace, force: Boolean): List<Part> =
+    command.parts.filter { part ->
+        val file = workspace.input(command.quest, part)
+        val needed = force || !file.hasContent()
+        if (!needed) println("${file.path} already present. FORCE=1 to overwrite.")
+        needed
+    }
+
+/** The key saved with `make key` if there is one; otherwise the site's, from [state]. */
+private suspend fun keyFor(quest: QuestId, part: Part, workspace: Workspace, state: Deferred<QuestState>?): String {
+    val saved = workspace.key(quest, part)
+    if (saved.hasContent()) {
+        println("key   ${saved.path}")
+        return saved.readText().trim()
+    }
+    println("key   API")
+    // Not null: this part has no saved key, so fetchInputs asked the site.
+    return checkNotNull(state).await().keys[part] ?: fail(missingKeyMessage(part))
+}
+
+private fun missingKeyMessage(part: Part): String =
+    if (part == Part.One) "No key1 from the site. Is EC_TOKEN current?"
+    else "No key${part.number} yet. Solve and submit part ${part.number - 1} on the site first."
+
+private fun writeInput(file: File, text: String) {
+    file.parentFile?.mkdirs()
+    file.writeText(text)
+    println("wrote ${file.path} (${lineCount(text)} lines)")
 }
 
 /** AES-256-CBC as the site uses it: the 32-byte key as-is, and its first 16 bytes as the IV. */

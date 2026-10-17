@@ -15,7 +15,12 @@ class Quest06 : Quest {
         return Answer(Profession.entries.sumOf { notes.pairs(it) })
     }
 
-    override fun part3(input: String): Answer = TODO("quest 06 part 3")
+    /** Pairs by tent distance: the notes repeat 1000 times, and a mentor is at most 1000 tents away. */
+    override fun part3(input: String): Answer = Answer(pairsNearby(input, distance = 1000, repeats = 1000))
+
+    /** Part 3 with its two numbers as parameters, so the samples with smaller ones can be tested. */
+    internal fun pairsNearby(input: String, distance: Int, repeats: Int): Long =
+        Notes.parse(input).pairsNearby(distance, repeats)
 
     /** The three professions, each written as one letter: upper case for a knight, lower for a novice. */
     private enum class Profession(val letter: Char) {
@@ -45,6 +50,38 @@ class Quest06 : Quest {
                     Role.Knight -> knightsSoFar++
                     Role.Novice -> pairs += knightsSoFar
                 }
+            }
+            return pairs
+        }
+
+        /**
+         * Pairs when the notes repeat [repeats] times in a row of tents, and a knight can mentor any
+         * novice of the same profession at most [distance] tents away, on either side.
+         *
+         * knightsBefore[p][i] is how many knights of profession p stand in the first i tents. The
+         * knights between tents lo and hi are then one subtraction, so each novice costs O(1)
+         * instead of checking up to 2 × distance neighbours.
+         */
+        fun pairsNearby(distance: Int, repeats: Int): Long {
+            require(distance >= 0 && repeats >= 1) { "distance >= 0 and repeats >= 1, got $distance and $repeats" }
+            val tents = people.size * repeats
+            fun tent(i: Int): Person = people[i % people.size]   // the repeated row, never copied
+
+            val knightsBefore = Array(Profession.entries.size) { IntArray(tents + 1) }
+            for (i in 0 until tents) {
+                for (counts in knightsBefore) counts[i + 1] = counts[i]
+                val person = tent(i)
+                if (person.role == Role.Knight) knightsBefore[person.profession.ordinal][i + 1]++
+            }
+
+            var pairs = 0L
+            for (i in 0 until tents) {
+                val person = tent(i)
+                if (person.role != Role.Novice) continue
+                val lo = maxOf(0, i - distance)
+                val hi = minOf(tents - 1, i + distance)
+                val counts = knightsBefore[person.profession.ordinal]
+                pairs += counts[hi + 1] - counts[lo]
             }
             return pairs
         }

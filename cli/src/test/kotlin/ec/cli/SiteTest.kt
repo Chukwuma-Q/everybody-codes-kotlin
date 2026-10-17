@@ -2,6 +2,7 @@ package ec.cli
 
 import com.sun.net.httpserver.HttpServer
 import ec.Part
+import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
 import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermissions
@@ -59,7 +60,7 @@ class SiteTest {
         routes["GET /assets/2025/1/input/79.json"] = """{"1": "$CIPHER_1", "2": "$CIPHER_2", "3": "00"}"""
         routes["GET /event/2025/quest/1"] = """{"penaltyLeftMs": 0, "key1": "$KEY_1"}"""
 
-        fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false)
+        runBlocking { fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false) }
 
         assertEquals(PLAIN_1, workspace.input(quest, Part.One).readText())
         assertEquals(null, seen.first { it.route.startsWith("GET /assets") }.cookie)
@@ -70,7 +71,7 @@ class SiteTest {
     @Test
     fun `fetch leaves an existing input alone unless forced`() {
         workspace.input(quest, Part.One).apply { parentFile.mkdirs(); writeText("mine") }
-        fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false)
+        runBlocking { fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false) }
         assertEquals("mine", workspace.input(quest, Part.One).readText())
         assertTrue(seen.isEmpty(), "nothing should be requested")
     }
@@ -80,12 +81,7 @@ class SiteTest {
         routes["GET /assets/2025/1/input/79.json"] = """{"1": "$CIPHER_1", "2": "$CIPHER_2"}"""
         routes["GET /event/2025/quest/1"] = """{"penaltyLeftMs": 0, "key1": "$KEY_1"}"""
         val failure = assertFailsWith<Failure> {
-            fetchInputs(
-                Command.Fetch(quest, listOf(Part.Two)),
-                workspace,
-                api,
-                force = false
-            )
+            runBlocking { fetchInputs(Command.Fetch(quest, listOf(Part.Two)), workspace, api, force = false) }
         }
         assertTrue("part 1" in failure.message.orEmpty())
     }
@@ -94,7 +90,7 @@ class SiteTest {
     fun `a saved key is used instead of asking the site`() {
         routes["GET /assets/2025/1/input/79.json"] = """{"1": "$CIPHER_1"}"""
         saveKey(Command.Key(quest, Part.One), workspace) { KEY_1 }
-        fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false)
+        runBlocking { fetchInputs(Command.Fetch(quest, listOf(Part.One)), workspace, api, force = false) }
         assertEquals(PLAIN_1, workspace.input(quest, Part.One).readText())
         assertFalse(seen.any { it.route.startsWith("GET /event") })
     }
@@ -110,9 +106,9 @@ class SiteTest {
     fun `check reports ok, unsolved and mismatch`() {
         routes["GET /event/2025/quest/1"] = """{"key1": "$KEY_1", "answer1": "Thymoryn", "answer2": "Selkrex"}"""
         Answers.record(workspace.answers(quest), mapOf(Part.One to "Thymoryn", Part.Two to "Wrong"))
-        assertFalse(checkAnswers(Command.Check(quest), workspace, api))
+        assertFalse(runBlocking { checkAnswers(Command.Check(quest), workspace, api) })
         Answers.record(workspace.answers(quest), mapOf(Part.Two to "Selkrex"))
-        assertTrue(checkAnswers(Command.Check(quest), workspace, api))
+        assertTrue(runBlocking { checkAnswers(Command.Check(quest), workspace, api) })
     }
 
     @Test
@@ -123,7 +119,7 @@ class SiteTest {
         routes["GET /assets/2025/1/input/79.json"] = """{"1": "$CIPHER_1", "2": "$CIPHER_2"}"""
         Answers.record(workspace.answers(quest), mapOf(Part.One to "Fyr\"ryn"))
 
-        assertTrue(submitAnswer(Command.Submit(quest, Part.One), workspace, api) { true })
+        assertTrue(runBlocking { submitAnswer(Command.Submit(quest, Part.One), workspace, api) { true } })
 
         assertEquals("""{"answer":"Fyr\"ryn"}""", seen.single { it.route.startsWith("POST") }.body)
         assertEquals(PLAIN_2, workspace.input(quest, Part.Two).readText())
@@ -133,8 +129,8 @@ class SiteTest {
     fun `submit sends nothing for a solved part, or without confirmation`() {
         Answers.record(workspace.answers(quest), mapOf(Part.One to "Thymoryn", Part.Two to "Selkrex"))
         routes["GET /event/2025/quest/1"] = """{"key1": "$KEY_1", "key2": "$KEY_2", "answer1": "Thymoryn"}"""
-        assertTrue(submitAnswer(Command.Submit(quest, Part.One), workspace, api) { error("must not ask") })
-        assertFalse(submitAnswer(Command.Submit(quest, Part.Two), workspace, api) { false })
+        assertTrue(runBlocking { submitAnswer(Command.Submit(quest, Part.One), workspace, api) { error("must not ask") } })
+        assertFalse(runBlocking { submitAnswer(Command.Submit(quest, Part.Two), workspace, api) { false } })
         assertFalse(seen.any { it.route.startsWith("POST") })
     }
 
@@ -143,29 +139,22 @@ class SiteTest {
         Answers.record(workspace.answers(quest), mapOf(Part.Two to "x", Part.Three to "y"))
         routes["GET /event/2025/quest/1"] = """{"key1": "$KEY_1", "key2": "$KEY_2", "penaltyLeftMs": 60000}"""
         assertTrue("wait 1m" in assertFailsWith<Failure> {
-            submitAnswer(
-                Command.Submit(quest, Part.Two),
-                workspace,
-                api
-            ) { true }
+            runBlocking { submitAnswer(Command.Submit(quest, Part.Two), workspace, api) { true } }
         }.message.orEmpty())
         assertTrue("locked" in assertFailsWith<Failure> {
-            submitAnswer(
-                Command.Submit(quest, Part.Three),
-                workspace,
-                api
-            ) { true }
+            runBlocking { submitAnswer(Command.Submit(quest, Part.Three), workspace, api) { true } }
         }.message.orEmpty())
     }
 
     @Test
     fun `an HTML page instead of JSON points at the token`() {
         routes["GET /event/2025/quest/1"] = "<html><title>Everybody Codes</title></html>"
-        val failure = assertFailsWith<Failure> { checkAnswers(Command.Check(quest), workspace, api) }
+        val failure = assertFailsWith<Failure> { runBlocking { checkAnswers(Command.Check(quest), workspace, api) } }
         assertTrue("EC_TOKEN" in failure.message.orEmpty())
     }
 
-    private companion object {
+    // Internal so ConcurrencyTest can share the same encrypted fixtures.
+    internal companion object {
         const val KEY_1 = "abcdefghijklmnopqrstuvwxyz012345"
         const val KEY_2 = "ZYXWVUTSRQPONMLKJIHGFEDCBA987654"
         const val CIPHER_1 =

@@ -1,6 +1,9 @@
 package ec.cli
 
 import ec.Part
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import java.security.GeneralSecurityException
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
@@ -10,13 +13,18 @@ import java.util.HexFormat
 /**
  * Downloads and decrypts each requested part's input, skipping files already present unless [force].
  * A key saved with `make key` is preferred; otherwise it comes from the site.
+ *
+ * The encrypted inputs and the site's key don't depend on each other, so both requests start
+ * before either is awaited: the wait is the slower of the two, not their sum. [prefetched] lets
+ * a caller that already started the input download pass it in instead of downloading twice.
  */
-internal fun fetchInputs(
+internal suspend fun fetchInputs(
     command: Command.Fetch,
     workspace: Workspace,
     api: Api,
     force: Boolean = System.getenv("FORCE") == "1",
-) {
+    prefetched: Deferred<Map<Part, String>>? = null,
+): Unit = coroutineScope {
     val quest = command.quest
     val wanted = command.parts.filter { part ->
         val file = workspace.input(quest, part)
@@ -24,19 +32,25 @@ internal fun fetchInputs(
         if (!needed) println("${file.path} already present. FORCE=1 to overwrite.")
         needed
     }
-    if (wanted.isEmpty()) return
+    if (wanted.isEmpty()) return@coroutineScope
 
-    val encrypted = api.encryptedInputs(quest)
-    val state by lazy { api.state(quest) }
+    // Start both downloads, then wait. Asking the site for a key is skipped when every
+    // wanted part has a saved one, as before.
+    val encrypted = prefetched ?: async { api.encryptedInputs(quest) }
+    val siteKeysNeeded = wanted.any { !workspace.key(quest, it).hasContent() }
+    val state = if (siteKeysNeeded) async { api.state(quest) } else null
+
+    val cipherTexts = encrypted.await()
     for (part in wanted) {
-        val cipherText = encrypted[part] ?: fail("No ciphertext for part ${part.number} in the input file.")
+        val cipherText = cipherTexts[part] ?: fail("No ciphertext for part ${part.number} in the input file.")
         val saved = workspace.key(quest, part)
         val key = if (saved.hasContent()) {
             println("key   ${saved.path}")
             saved.readText().trim()
         } else {
             println("key   API")
-            state.keys[part] ?: fail(
+            // Not null: this part has no saved key, so siteKeysNeeded was true.
+            checkNotNull(state).await().keys[part] ?: fail(
                 if (part == Part.One) "No key1 from the site. Is EC_TOKEN current?"
                 else "No key${part.number} yet. Solve and submit part ${part.number - 1} on the site first."
             )

@@ -10,6 +10,7 @@ kotlin {
 
 dependencies {
     implementation(project(":puzzles"))
+    implementation(libs.kotlinx.coroutines.core)
     testImplementation(kotlin("test"))
 }
 

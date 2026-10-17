@@ -10,6 +10,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.toJavaDuration
+import kotlinx.coroutines.future.await
 
 /** What the site knows about one quest: the keys you've unlocked, accepted answers, any lockout. */
 internal class QuestState(val keys: Map<Part, String>, val answers: Map<Part, String>, val lockout: Duration)
@@ -25,6 +26,10 @@ internal class Verdict(val correct: Boolean, val globalPlace: Long?, val localTi
  *     POST {api}/event/<year>/quest/<quest>/part/<p>/answer      {"answer": "…"} → {"correct": …}
  *
  * The api calls authenticate with the session cookie; the encrypted inputs need none.
+ *
+ * Every call suspends instead of blocking: [HttpClient.sendAsync] does the waiting on the client's
+ * own threads, and [await] resumes the caller when the response arrives. While one call waits,
+ * the caller's thread is free to start another, which is what lets two downloads overlap.
  */
 internal class Api(
     private val config: Config,
@@ -34,7 +39,7 @@ internal class Api(
 ) {
     private var tokenChecked = false
 
-    fun encryptedInputs(quest: QuestId): Map<Part, String> {
+    suspend fun encryptedInputs(quest: QuestId): Map<Part, String> {
         val blob = send(
             get("$site/assets/${quest.year}/${quest.number}/input/${config.seed}.json"),
             authenticated = false
@@ -42,7 +47,7 @@ internal class Api(
         return Part.entries.mapNotNull { part -> blob.text("${part.number}")?.let { part to it } }.toMap()
     }
 
-    fun state(quest: QuestId): QuestState {
+    suspend fun state(quest: QuestId): QuestState {
         val obj = send(get("$api/event/${quest.year}/quest/${quest.number}"), authenticated = true).first
         return QuestState(
             keys = Part.entries.mapNotNull { part -> obj.text("key${part.number}")?.let { part to it } }.toMap(),
@@ -51,7 +56,7 @@ internal class Api(
         )
     }
 
-    fun submit(quest: QuestId, part: Part, answer: String): Verdict {
+    suspend fun submit(quest: QuestId, part: Part, answer: String): Verdict {
         val request =
             HttpRequest.newBuilder(URI("$api/event/${quest.year}/quest/${quest.number}/part/${part.number}/answer"))
                 .header("Content-Type", "application/json")
@@ -62,7 +67,7 @@ internal class Api(
 
     private fun get(url: String): HttpRequest.Builder = HttpRequest.newBuilder(URI(url)).GET()
 
-    private fun send(builder: HttpRequest.Builder, authenticated: Boolean): Pair<Json.Obj, String> {
+    private suspend fun send(builder: HttpRequest.Builder, authenticated: Boolean): Pair<Json.Obj, String> {
         builder.timeout(TIMEOUT.toJavaDuration())
             .header("User-Agent", config.userAgent)
             .header("Accept", "application/json")
@@ -73,7 +78,7 @@ internal class Api(
         val request = builder.build()
         val where = "${request.method()} ${request.uri().path}"
         val response = try {
-            http.send(request, HttpResponse.BodyHandlers.ofString())
+            http.sendAsync(request, HttpResponse.BodyHandlers.ofString()).await()
         } catch (e: IOException) {
             fail("$where: ${e.message ?: e::class.simpleName}")
         }

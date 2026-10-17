@@ -1,6 +1,9 @@
 package ec.cli
 
 import ec.Part
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.supervisorScope
 import java.nio.file.Files
 import java.nio.file.attribute.PosixFilePermissions
 import kotlin.time.Duration
@@ -9,8 +12,13 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Posts the saved answer for one part, after checking it isn't already solved, still locked,
  * or in a wrong-answer lockout, and after you confirm. On success, fetches the next part's input.
+ *
+ * Most of this is a chain where each step needs the one before: the checks need the site's
+ * state, the post needs your yes, and the next key exists only once the answer is accepted.
+ * The next part's encrypted input is the exception. It depends on none of them, so it starts
+ * downloading first and is usually finished by the time you've answered the prompt.
  */
-internal fun submitAnswer(
+internal suspend fun submitAnswer(
     command: Command.Submit,
     workspace: Workspace,
     api: Api,
@@ -20,7 +28,34 @@ internal fun submitAnswer(
     val part = command.part
     val answer = Answers.read(workspace.answers(quest))[part]
         ?: fail("No saved answer for quest ${quest.padded} part ${part.number}. Run: make run Q=${quest.padded} P=${part.number}")
+    val next = Part.entries.getOrNull(part.ordinal + 1)
 
+    // supervisorScope, not coroutineScope: the download is a guess that we'll need it. In a
+    // coroutineScope its failure would fail the whole command, even when the part turns out to be
+    // solved already and the input is never used. Here a failure stays inside the Deferred and
+    // surfaces only if something awaits it.
+    return supervisorScope {
+        val nextInput = next?.let { async { api.encryptedInputs(quest) } }
+        try {
+            checkAndPost(quest, part, answer, workspace, api, confirm, next, nextInput)
+        } finally {
+            // Stops the download on every path that didn't use it: already solved, a lockout,
+            // "N" at the prompt, or a wrong answer. Cancelling a finished download does nothing.
+            nextInput?.cancel()
+        }
+    }
+}
+
+private suspend fun checkAndPost(
+    quest: QuestId,
+    part: Part,
+    answer: String,
+    workspace: Workspace,
+    api: Api,
+    confirm: (String) -> Boolean,
+    next: Part?,
+    nextInput: Deferred<Map<Part, String>>?,
+): Boolean {
     val state = api.state(quest)
     state.answers[part]?.let { accepted ->
         val verdict = if (accepted == answer) "matches your saved answer" else "your saved answer is '$answer'"
@@ -30,6 +65,8 @@ internal fun submitAnswer(
     if (part !in state.keys) fail("Part ${part.number} is still locked. Solve part ${part.number - 1} first.")
     if (state.lockout.isPositive()) fail("Wrong-answer lockout: wait ${clock(state.lockout)} before submitting again.")
 
+    // confirm blocks this thread while you type. The download keeps going regardless: the bytes
+    // arrive on HttpClient's threads, and the rest of it runs as soon as this thread is free again.
     if (System.getenv("YES") != "1" && !confirm("Submit '$answer' for quest ${quest.padded} part ${part.number}? [y/N] ")) {
         println("Not submitted.")
         return false
@@ -40,14 +77,14 @@ internal fun submitAnswer(
         return false
     }
     println("Correct! Global place ${verdict.globalPlace ?: "?"}, local time ${verdict.localTime?.let(::clock) ?: "?"}.")
-    Part.entries.getOrNull(part.ordinal + 1)?.let { next ->
-        fetchInputs(Command.Fetch(quest, listOf(next)), workspace, api)
-    }
+    // fetchInputs asks the site for the state again: the key for the next part didn't exist
+    // until this answer was accepted, so the state from the start of the command is out of date.
+    next?.let { fetchInputs(Command.Fetch(quest, listOf(it)), workspace, api, prefetched = nextInput) }
     return true
 }
 
 /** Compares your saved answers with the ones the site accepted. False on any mismatch. */
-internal fun checkAnswers(command: Command.Check, workspace: Workspace, api: Api): Boolean {
+internal suspend fun checkAnswers(command: Command.Check, workspace: Workspace, api: Api): Boolean {
     val accepted = api.state(command.quest).answers
     val saved = Answers.read(workspace.answers(command.quest))
     var consistent = true

@@ -58,8 +58,8 @@ class Quest06 : Quest {
          * Pairs when the notes repeat [repeats] times in a row of tents, and a knight can mentor any
          * novice of the same profession at most [distance] tents away, on either side.
          *
-         * knightsBefore[p][i] is how many knights of profession p stand in the first i tents. The
-         * knights between tents lo and hi are then one subtraction, so each novice costs O(1)
+         * knightsBefore [p][i] is how many knights of profession p stand in the first [p][i] tents. The
+         * knights between tents lo and hi are then one subtraction, so each novice costs [p][O(1)]
          * instead of checking up to 2 × distance neighbours.
          */
         fun pairsNearby(distance: Int, repeats: Int): Long {
